@@ -1,0 +1,374 @@
+{
+  "name": "MindWorkers Prompt Chaining",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pinecone.io/query",
+        "sendBody": true,
+        "jsonBody": {
+          "query": "{{ $json.body.message }}",
+          "top_k": 1
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7",
+      "name": "Consulta Base Conocimiento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-pinecone-credentials-id",
+          "name": "Pinecone API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.ai/v1/completions",
+        "sendBody": true,
+        "jsonBody": {
+          "prompt": "Eres Helios, un clasificador de intenciones iniciales. Analiza la consulta del usuario: \"{{ $json.body.message }}\". Clasifica la intención en una de las siguientes categorías: consulta, compra, soporte, queja. Devuelve solo la categoría como texto (ejemplo: 'consulta').",
+          "model": "grok-3"
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8",
+      "name": "Clasificar 1.0 Helios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 500],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-credentials-id",
+          "name": "xAI API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.ai/v1/completions",
+        "sendBody": true,
+        "jsonBody": {
+          "prompt": "Eres Delta, una gerente de perfilamiento B2B con más de 10 años de experiencia en ventas. Tu objetivo es realizar un descubrimiento inicial estructurado mediante la metodología BANT (Budget, Authority, Need, Timeline). Basándote en la consulta del usuario: \"{{ $json.body.message }}\" y la información de la base de conocimientos: \"{{ $node['Consulta Base Conocimiento'].json.response }}\", genera una respuesta técnica precisa sobre los servicios de la empresa. Ejemplo: 'Mind Workers ofrece soluciones de automatización con inteligencia artificial, específicamente desarrollo de agentes empresariales de IA personalizados.'",
+          "model": "grok-3"
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "4d5e6f7g-8h9i-0j1k-2l3m-4n5o6p7q8r9",
+      "name": "Agente de Ventas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-credentials-id",
+          "name": "xAI API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.ai/v1/completions",
+        "sendBody": true,
+        "jsonBody": {
+          "prompt": "Eres un asistente de IA especializado en personalizar mensajes. Toma la siguiente información técnica: \"{{ $node['Agente de Ventas'].json.response }}\". Convierte esta información en un mensaje amigable, con tono humano, y divídelo en tres partes cortas como si fuera a enviarse por WhatsApp. Usa un enfoque basado en la metodología BANT para incluir una pregunta que explore las necesidades del usuario. Ejemplo de estructura:\nParte 1: Saludo e introducción a los servicios.\nParte 2: Beneficios clave.\nParte 3: Pregunta BANT (ejemplo: '¿Qué canales te gustaría automatizar?'). Máximo 200 caracteres por parte.",
+          "model": "grok-3"
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "5e6f7g8h-9i0j-1k2l-3m4n-5o6p7q8r9s0",
+      "name": "Personalizar Mensaje",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-credentials-id",
+          "name": "xAI API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.ai/v1/completions",
+        "sendBody": true,
+        "jsonBody": {
+          "prompt": "Eres Natural, un clasificador avanzado de intención y sentimiento. Analiza la consulta del usuario: \"{{ $json.body.message }}\". Clasifica la intención (consultar, comprar, soporte, queja) y el sentimiento (positivo, neutro, negativo). Devuelve un objeto JSON con:\n{\n  \"intention\": \"consultar/comprar/soporte/queja\",\n  \"sentiment\": \"positivo/neutro/negativo\"\n}",
+          "model": "grok-3"
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "6f7g8h9i-0j1k-2l3m-4n5o-6p7q8r9s0t1",
+      "name": "Clasificar 3.0 Natural",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 500],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-credentials-id",
+          "name": "xAI API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{ $node['Clasificar 3.0 Natural'].json.sentiment }}",
+              "operation": "equal",
+              "value2": "negativo"
+            }
+          ]
+        }
+      },
+      "id": "7g8h9i0j-1k2l-3m4n-5o6p-7q8r9s0t1u2",
+      "name": "IF - Sentimiento Negativo",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "jsonBody": {
+          "channel": "your-slack-channel-id",
+          "text": "Conversación con sentimiento negativo detectado: {{ $json.body.message }}"
+        },
+        "options": {}
+      },
+      "id": "8h9i0j1k-2l3m-4n5o-6p7q-8r9s0t1u2v3",
+      "name": "Notificar a Humano",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 400],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-slack-credentials-id",
+          "name": "Slack API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.whatsapp.com/v1/messages",
+        "sendBody": true,
+        "jsonBody": {
+          "to": "{{ $json.body.user_phone }}",
+          "messages": [
+            { "text": "{{ $node['Personalizar Mensaje'].json.part1 }}" },
+            { "text": "{{ $node['Personalizar Mensaje'].json.part2 }}" },
+            { "text": "{{ $node['Personalizar Mensaje'].json.part3 }}" }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "9i0j1k2l-3m4n-5o6p-7q8r-9s0t1u2v3w4",
+      "name": "Enviar por WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-whatsapp-credentials-id",
+          "name": "WhatsApp API Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendBody": true,
+        "jsonBody": {
+          "channel": "your-slack-channel-id",
+          "text": "Error en el flujo: {{ $json.error.message }}"
+        },
+        "options": {}
+      },
+      "id": "0j1k2l3m-4n5o-6p7q-8r9s-0t1u2v3w4x5",
+      "name": "Notificar Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 100],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "replace-with-your-slack-credentials-id",
+          "name": "Slack API Credentials"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Consulta Base Conocimiento",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Clasificar 1.0 Helios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consulta Base Conocimiento": {
+      "main": [
+        [
+          {
+            "node": "Agente de Ventas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar 1.0 Helios": {
+      "main": [
+        [
+          {
+            "node": "Agente de Ventas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Ventas": {
+      "main": [
+        [
+          {
+            "node": "Personalizar Mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalizar Mensaje": {
+      "main": [
+        [
+          {
+            "node": "Enviar por WhatsApp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Clasificar 3.0 Natural",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar 3.0 Natural": {
+      "main": [
+        [
+          {
+            "node": "IF - Sentimiento Negativo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Sentimiento Negativo": {
+      "main": [
+        [
+          {
+            "node": "Notificar a Humano",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "2"
+}
